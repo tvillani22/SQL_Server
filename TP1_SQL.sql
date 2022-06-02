@@ -13,16 +13,16 @@ WHERE pc.FirstName LIKE 'D%' OR pc.FirstName LIKE 'A%'
 ORDER BY 1;
 
 /*
-3 - De la tabla [Person].[Contact],muestra todos los registros que se modificaron después del 1/1/2013.
+3 - De la tabla [Person].[Contact], muestra todos los registros que se modificaron después del 1/1/2013.
 */
---Modifico año a 2003 porque las modificacines van entre 1997 y 2005 y ordeno para evidenciar
+--Modifico año a 2003 porque las modificaciones van entre 1997 y 2005 y ordeno para evidenciar
 SELECT *
 FROM Person.Contact 
 WHERE ModifiedDate > '2003-01-01'
 ORDER BY ModifiedDate;
 
 /*
-4 - De la tabla [Person]. [Address], muestre los nombres de las ciudades sin repetirlos.
+4 - De la tabla [Person].[Address], muestre los nombres de las ciudades sin repetirlos.
 */
 SELECT DISTINCT City 
 FROM Person.Address;
@@ -50,13 +50,13 @@ SELECT COUNT(*) num_vtas_total
 FROM  Sales.SalesOrderHeader;
 
 /*
-6 - De la tabla [Sales]. [CreditCard], muestre todas las tarjetas 
+6 - De la tabla [Sales].[CreditCard], muestre todas las tarjetas 
 con un año de vencimiento anterior al 2018.
 */
 -- Reemplazo 2018 por 2006 porque los vencimientos van entre 2005 y 2008
 SELECT *
 FROM Sales.CreditCard
-WHERE ExpYear < '2006';
+WHERE ExpYear < 2006;
 
 /*
 7 - Traer de la tabla Person.Contact los datos de contacto de todos los que NO son empleados 
@@ -72,11 +72,11 @@ WHERE hre.ContactID IS NULL;
 8 - Crear una tabla [Test].[Tarjetas_vencidas] y cargar en la misma el resultado de la consulta 7
 */
 -- Asumo que se refiere a la consulta 6
--- Evito notación punto ara no tener que crear una schema.
+-- Evito notación punto para no tener que crear una schema.
 SELECT *
 INTO Test_Tarjetas_vencidas 
 FROM Sales.CreditCard   
-WHERE ExpYear < '2006';
+WHERE ExpYear < 2006;
 
 --Verifico
 SELECT TOP(5) *
@@ -99,7 +99,7 @@ cuando el vencimiento anterior del año 2015.
 --Elijo 2006 en lugar de 2015 porque los vencimientos van entre 2005 y 2008
 UPDATE Test_Tarjetas_vencidas
 SET bandera = 1
-WHERE ExpYear < '2006';
+WHERE ExpYear < 2006;
 
 --Verifico
 SELECT TOP(5) *
