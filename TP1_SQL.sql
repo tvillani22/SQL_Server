@@ -107,40 +107,113 @@ FROM Test_Tarjetas_vencidas
 ORDER BY bandera DESC;
 
 --Para eliminarla
-DROP TABLE Test_Tarjetas_vencidas;
+DROP TABLE Test_Tarjetas_vencidas
+GO;
 
 /*
 11 - Crear una vista donde se muestre lo desarrollado en el punto 2
 */
+CREATE VIEW test_view
+AS SELECT pc.FirstName
+FROM person.Contact AS pc
+WHERE pc.FirstName LIKE 'D%' or pc.FirstName LIKE 'A%'
+GO;
 
+--Chequeo que está
+SELECT TOP(5) *
+FROM test_view;
+
+--Para eliminarla
+DROP VIEW IF EXISTS test_view
+GO;
 
 /*
 12 - Crear una vista donde se muestren los datos de los empleados cuyo cumpleaños 
 sea el dia de "hoy", mostrando la fecha de nacimiento con el formato análogo a “15/11/2021”.
 */
+CREATE VIEW birthday_view AS
+SELECT FORMAT(hre.BirthDate, 'dd/MM/yyyy') AS BirthDate, pc.*
+FROM HumanResources.Employee hre
+JOIN Person.Contact pc
+      ON pc.ContactID = hre.ContactID
+WHERE (MONTH(hre.BirthDate) = MONTH(GETDATE()) AND DAY(hre.BirthDate) = DAY(GETDATE())) OR
+      (FORMAT(hre.BirthDate, 'dd/MM') = '29/02' AND FORMAT(GETDATE(), 'dd/MM') = '01/03')
+GO;
 
+--Verifico
+SELECT *
+FROM birthday_view;
+
+--Para eliminarla
+DROP VIEW IF EXISTS birthday_view
+GO;
 
 /*
 12bis - A partir de la tabla SalesOrderHeader, Crear un Stored Procedure donde 
 se muestren el dinero recaudado entre 2 fechas que se ingresaran por parametro.
 */
+CREATE PROCEDURE GetRevenueTest
+    @BeginDate date,   
+    @EndDate date   
+AS    
+    SELECT SUM(TotalDue) ingresos
+    FROM Sales.SalesOrderHeader
+    WHERE OrderDate BETWEEN @BeginDate AND @EndDate
+GO;
+
+-- Ejecuto
+EXECUTE GetRevenueTest @BeginDate = N'2002-03-01', @EndDate = N'2003-03-01';
+-- o
+--EXECUTE GetRevenueTest N'2002-03-01', N'2003-03-01';
+
+-- Para eliminarlo
+DROP  PROCEDURE IF EXISTS  GetRevenueTest;
 
 
 /*
 13 - Traer el nombre de las tablas pertenecientes al esquema Production.
 */
+-- Incluyendo views
+SELECT *
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = 'Production'
+ORDER BY TABLE_NAME;
+
+-- Sin incluir views
+SELECT *
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = 'Production' AND TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_NAME;
+
+-- Alternativa 2 (query a sys.tables y usando function schema_name, no incluye views)
+SELECT schema_name(schema_id) AS schema_name, name AS table_name
+FROM sys.tables
+WHERE schema_name(schema_id) = 'Production'
+ORDER BY table_name;
 
 
 /*
 14 - Traer por codigo la query utilizada para crear la vista correspondiente al punto 11.
 */
-
+sp_helptext 'dbo.test_view';
 
 /*
 15 - Traer por interfaz la query utilizada para crear la tabla Person.Contact.
-*/
 
+En Azure Data Studio:(el usado) Abriendo el panel de servers sobre la izquierda de la pantalla,
+desplegando el server actual, el directorio `Tables`, haciendo click derecho sobre `Person.Contact`
+y seleccionando `Script as Create` me abre un archivo `.sql` con el `CREATE` statement
+correspondiente a esa tabla.
+
+En SQL Server Management Studio: Acá una explicación con las imágenes de la GUI: 
+https://docs.microsoft.com/en-us/sql/ssms/scripting/generate-scripts-sql-server-management-studio?view=sql-server-ver16).
+*/
 
 /*
 16 - Traer por Codigo la query utilizada para crear la tabla Person.Contact.
+
+Entiendo que no hay análogo a la herramienta sp_helptext para tablas...
+(https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-helptext-transact-sql?view=sql-server-ver16) 
+...y que hay algunos objetos de SQL Server para los cuales se puede obtener el script vía T-SQL y otros para los que no, en cuyo caso se puede
+armar algo específico con SQL Server Management Objects Framework (aka SMO).
 */
