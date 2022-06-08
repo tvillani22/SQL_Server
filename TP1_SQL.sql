@@ -1,3 +1,6 @@
+SET STATISTICS IO ON
+SET STATISTICS TIME ON;
+
 /* 1. De la tabla [Person].[Contact], mostrar todos los datos de la tabla, ordenando por Apellido ascendente,
 y nombre descendente */
 SELECT *
@@ -7,9 +10,16 @@ ORDER BY LastName, FirstName DESC;
 
 /* 2.  De la tabla [Person].[Contact], muestre los nombres de las personas que comienzan con 'D'
 o que comienzan con "A", ordenado alfabéticamente. */
+SELECT DISTINCT pc.FirstName
+FROM Person.Contact AS pc
+WHERE pc.FirstName LIKE '[A/D]%'
+ORDER BY 1;
+
+--Alternativa más performante
 SELECT pc.FirstName
 FROM Person.Contact AS pc
-WHERE pc.FirstName LIKE 'D%' OR pc.FirstName LIKE 'A%'
+WHERE pc.FirstName LIKE '[A/D]%'
+GROUP BY pc.FirstName
 ORDER BY 1;
 
 /*
@@ -26,6 +36,11 @@ ORDER BY ModifiedDate;
 */
 SELECT DISTINCT City 
 FROM Person.Address;
+
+--Alternativa más performante
+SELECT City 
+FROM Person.Address
+GROUP BY City;
 
 /*
 5 - Mostrar la cantidad de ventas que se realizaron con cada tipo de tarjetas de credito 
@@ -51,12 +66,12 @@ FROM  Sales.SalesOrderHeader;
 
 /*
 6 - De la tabla [Sales].[CreditCard], muestre todas las tarjetas 
-con un año de vencimiento anterior al 2018.
+con un año de vencimiento anterior al 2018 inclusive.
 */
 -- Reemplazo 2018 por 2006 porque los vencimientos van entre 2005 y 2008
 SELECT *
 FROM Sales.CreditCard
-WHERE ExpYear < 2006;
+WHERE ExpYear <= 2006;
 
 /*
 7 - Traer de la tabla Person.Contact los datos de contacto de todos los que NO son empleados 
@@ -68,6 +83,18 @@ LEFT JOIN HumanResources.Employee hre
     ON pc.ContactID = hre.ContactID
 WHERE hre.ContactID IS NULL;
 
+--Alternativa menos performante (cheq)
+SELECT * 
+FROM Person.Contact pc
+WHERE NOT EXISTS (SELECT 1
+                  FROM HumanResources.Employee hre
+                  WHERE pc.ContactID = hre.ContactID);
+
+--Alternativa menos performante aún (cheq)
+SELECT * 
+FROM Person.Contact pc
+WHERE pc.ContactID NOT IN (SELECT ContactID FROM HumanResources.Employee);
+
 /*
 8 - Crear una tabla [Test].[Tarjetas_vencidas] y cargar en la misma el resultado de la consulta 7
 */
@@ -76,7 +103,7 @@ WHERE hre.ContactID IS NULL;
 SELECT *
 INTO Test_Tarjetas_vencidas 
 FROM Sales.CreditCard   
-WHERE ExpYear < 2006;
+WHERE ExpYear <= 2006;
 
 --Verifico
 SELECT TOP(5) *
@@ -115,8 +142,9 @@ GO;
 */
 CREATE VIEW test_view
 AS SELECT pc.FirstName
-FROM person.Contact AS pc
-WHERE pc.FirstName LIKE 'D%' or pc.FirstName LIKE 'A%'
+FROM Person.Contact AS pc
+WHERE pc.FirstName LIKE '[A/D]%'
+GROUP BY pc.FirstName;
 GO;
 
 --Chequeo que está
@@ -132,13 +160,22 @@ GO;
 sea el dia de "hoy", mostrando la fecha de nacimiento con el formato análogo a “15/11/2021”.
 */
 CREATE VIEW birthday_view AS
+SELECT CONVERT(varchar, hre.BirthDate, 103) AS BirthDate
+FROM HumanResources.Employee hre
+JOIN Person.Contact pc
+      ON pc.ContactID = hre.ContactID
+WHERE (MONTH(hre.BirthDate) = MONTH(GETDATE()) AND DAY(hre.BirthDate) = DAY(GETDATE())) OR
+      (MONTH(hre.BirthDate) = 2 AND DAY(hre.BirthDate) = 29 AND MONTH(GETDATE()) = 3 AND DAY(GETDATE()) = 1)
+GO;
+/*
+--Alternativa con FORMAT
 SELECT FORMAT(hre.BirthDate, 'dd/MM/yyyy') AS BirthDate, pc.*
 FROM HumanResources.Employee hre
 JOIN Person.Contact pc
       ON pc.ContactID = hre.ContactID
 WHERE (MONTH(hre.BirthDate) = MONTH(GETDATE()) AND DAY(hre.BirthDate) = DAY(GETDATE())) OR
-      (FORMAT(hre.BirthDate, 'dd/MM') = '29/02' AND FORMAT(GETDATE(), 'dd/MM') = '01/03')
-GO;
+      (FORMAT(hre.BirthDate, 'dd/MM') = '29/02' AND FORMAT(GETDATE(), 'dd/MM') = '01/03');
+*/
 
 --Verifico
 SELECT *
@@ -212,8 +249,12 @@ https://docs.microsoft.com/en-us/sql/ssms/scripting/generate-scripts-sql-server-
 /*
 16 - Traer por Codigo la query utilizada para crear la tabla Person.Contact.
 
-Entiendo que no hay análogo a la herramienta sp_helptext para tablas...
+Entiendo que no hay análogo a la herramienta sp_helptext
 (https://docs.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-helptext-transact-sql?view=sql-server-ver16) 
-...y que hay algunos objetos de SQL Server para los cuales se puede obtener el script vía T-SQL y otros para los que no, en cuyo caso se puede
-armar algo específico con SQL Server Management Objects Framework (aka SMO).
+para tablas, y que hay algunos objetos de SQL Server para los cuales se debe obtener el script
+vía T-SQL o armando algo específico con SQL Server Management Objects Framework (aka SMO).
+
+Armando el script de T_SQL recreate_creation_script.sql y se puede correr el comando...
+sqlcmd -U SA -d "AdventureWorks" -i recreate_creation_script.sql -o creation_script.sql
+...y obtener el creation_script.sql.
 */
