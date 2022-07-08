@@ -1,5 +1,8 @@
+/*
+-- Para comparar performance en los que hay más de una alternativa
 SET STATISTICS IO ON
 SET STATISTICS TIME ON;
+*/
 
 /* 1. De la tabla [Person].[Contact], mostrar todos los datos de la tabla, ordenando por Apellido ascendente,
 y nombre descendente */
